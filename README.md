@@ -6,7 +6,7 @@ Ce projet implémente un décodeur soft pour les codes LDPC (Low-Density Parity-
 
 - **`SOFT_DECODER_GROUPE.m`** : Fonction principale implémentant le décodeur soft pour les codes LDPC.
 - **`LDPC_SOFT_ONLY_TEST_SCRIPT.m`** : Script de test pour valider le décodeur soft à partir d'un jeu de données et comparer avec les résultats de référence.
-- **Script d'analyse BER** : Script additionnel pour évaluer le décodeur en fonction du BER, du nombre d'itérations moyennes, et de la fréquence des arrêts anticipés, avec affichage graphique.
+- **`LDPC_SOFT_DECODER_COMPLETE_TEST_SCRIPT.m`** : Script additionnel pour évaluer le décodeur en fonction du BER, du nombre d'itérations moyennes, et de la fréquence des arrêts anticipés, avec affichage graphique.
 
 ## Fonctionnalités Principales
 
@@ -57,10 +57,10 @@ Les résultats sont affichés dans des graphes montrant l'évolution de :
 ## Utilisation
 
 1. **Exécuter le décodeur sur un ensemble de données** :
-   - Lancez `LDPC_SOFT_ONLY_TEST_SCRIPT.m` pour tester le décodeur sur des données chargées et afficher les comparaisons avec les références.
+   - Lancer `LDPC_SOFT_ONLY_TEST_SCRIPT.m` pour tester le décodeur sur des données chargées et afficher les comparaisons avec les références.
 
 2. **Tester la performance avec BER** :
-   - Lancez le script d'analyse de BER pour évaluer les performances du décodeur sous différentes probabilités de bruit et obtenir des graphiques détaillés.
+   - Lancer le script d'analyse de BER pour évaluer les performances du décodeur sous différentes probabilités de bruit et obtenir des graphiques détaillés.
 
 ## Exemples
 
@@ -84,28 +84,17 @@ disp(iterations);
 ```
 
 ### Exécution du Test et Affichage Graphique
-Exécutez le script d'analyse BER pour obtenir les performances du décodeur en utilisant différentes probabilités de bruit :
+Exécuter le script d'analyse BER `LDPC_SOFT_DECODER_COMPLETE_TEST_SCRIPT.m` pour obtenir les performances du décodeur en utilisant différentes probabilités de bruit :
 ```matlab
 % Exécuter le script pour obtenir les graphiques de performance
 run('LDPC_SOFT_DECODER_TEST.m')
 ```
 
-## Améliorations Futures
+## Améliorations 
 Ce projet est en cours de développement. Les améliorations futures pourraient inclure :
+- Performance du décodeur
 - Optimisation de l'algorithme pour des matrices `H` de grande taille.
 - Intégration d’une estimation de BER plus rapide pour des ensembles de données larges.
 - Analyse de complexité et ajustements pour améliorer la convergence.
-
-## Auteurs et Remerciements
-
-**Auteur** : Lélio CHETOT  
-**Date** : 31 Octobre 2023 🎃  
-
----
-
-Ce projet vise à fournir une base pour les étudiants et les chercheurs souhaitant explorer et optimiser les décodeurs LDPC soft.
-```
-
-
 
 
