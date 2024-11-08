@@ -11,11 +11,11 @@ function [c_cor, iter_count] = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER)
         q(i, :, 2) = p(i);     % Probabilité que le bit soit 1
     end
 
-    iter_count = 0; % Initialize iteration counter
+    iter_count = 0; % Initialisation du compteur 
 
     % Boucle d'itération pour le décodage
     for iter = 1:MAX_ITER
-        iter_count = iter; % Store the iteration count
+        iter_count = iter; % Stockage du décompte
         
         % Étape 1 : Calcul des messages r(j, i, :) pour chaque check node vers les v-nodes
         for j = 1:M
