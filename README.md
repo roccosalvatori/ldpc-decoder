@@ -74,9 +74,9 @@ La fonction retourne un vecteur `c_cor`, qui est le mot de code corrigé après 
 
 ## Points à vérifier et ajustements
 
-1. **Matrice de parité** : Vérifiez que la matrice `H` soit définie correctement et respecte les règles de construction LDPC.
-2. **Probabilités initiales (`p`)** : Assurez-vous que le vecteur `p` reflète la probabilité correcte de chaque bit de la séquence d'entrée.
-3. **Nombre d'itérations** : Adaptez `MAX_ITER` en fonction des besoins en précision et de la performance de calcul.
+1. **Matrice de parité** : Vérifier que la matrice `H` soit définie correctement et respecte les règles de construction LDPC.
+2. **Probabilités initiales (`p`)** : S'assurer que le vecteur `p` reflète la probabilité correcte de chaque bit de la séquence d'entrée.
+3. **Nombre d'itérations** : Adapter `MAX_ITER` en fonction des besoins en précision et de la performance de calcul.
 
 
 
