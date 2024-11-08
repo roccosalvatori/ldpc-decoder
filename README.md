@@ -1,3 +1,7 @@
+# PROJET LDPC 🧑🏽‍💻
+
+## Présentation du Projet
+
 Le but de ce projet est l’implémentation et la compréhension d’un codec canal de type LDPC.
 Inventé en 1964 par Robert Gallager et redécouvert en 1996 par David MacKay, les LDPCs ont su
 
