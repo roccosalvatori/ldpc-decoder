@@ -37,12 +37,18 @@ H = logical([
 % Maximum number of iterations
 MAX_ITER = 100;
 
+% Initialize counters for performance metrics
+correct_true_flip = 0;
+correct_true_soft = 0;
+correct_soft_ref = 0;
+
 % Loop for the tests
 fprintf('+--------------------------------------------------------------------------+\n')
 fprintf('| Test\t|\tTrue == Flip\t|\tTrue == Soft\t|\tSoft == Soft (ref) |\n')
 fprintf('+--------------------------------------------------------------------------+\n')
 for n = 1:N_data
     fprintf('| %5d\t|\t', n)
+    
     % Data
     data = squeeze(dataset(n, :, :));
     
@@ -56,12 +62,37 @@ for n = 1:N_data
     c_soft = SOFT_DECODER_GROUPE(c_ds_flip, H, P1_ds, MAX_ITER);
     
     % Comparison with the flipped codeword
-    fprintf('%12s\t|\t', string(isequal(c_ds_true, c_ds_flip)))
-
-    % Comparison with the true codeword (1 indicates equality)
-    fprintf('%12s\t|\t', string(isequal(c_ds_true, c_soft)))
+    true_flip = isequal(c_ds_true, c_ds_flip);
+    true_soft = isequal(c_ds_true, c_soft);
+    soft_ref = isequal(c_soft, c_ds_soft);
     
-    % Comparison with corrected data from the dataset (reference soft decoder)
-    fprintf('%18s |\n', string(isequal(c_soft, c_ds_soft)))
+    fprintf('%12s\t|\t', string(true_flip))
+    fprintf('%12s\t|\t', string(true_soft))
+    fprintf('%18s |\n', string(soft_ref))
+    
+    % Update counters for the metrics
+    correct_true_flip = correct_true_flip + true_flip;
+    correct_true_soft = correct_true_soft + true_soft;
+    correct_soft_ref = correct_soft_ref + soft_ref;
 end
 fprintf('+--------------------------------------------------------------------------+\n')
+
+% Plotting performance metrics
+tests = 1:N_data;
+success_true_flip = correct_true_flip / N_data * 100;
+success_true_soft = correct_true_soft / N_data * 100;
+success_soft_ref = correct_soft_ref / N_data * 100;
+
+% Plot the comparison metrics
+figure;
+bar([success_true_flip, success_true_soft, success_soft_ref]);
+set(gca, 'xticklabel', {'True == Flip', 'True == Soft', 'Soft == Soft (ref)'});
+ylabel('Success Rate (%)');
+title('Performance of Soft Decoder');
+ylim([0 100]);
+grid on;
+
+disp('Performance Metrics:');
+fprintf('Success rate (True == Flip): %.2f%%\n', success_true_flip);
+fprintf('Success rate (True == Soft): %.2f%%\n', success_true_soft);
+fprintf('Success rate (Soft == Soft (ref)): %.2f%%\n', success_soft_ref);
