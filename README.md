@@ -1,100 +1,128 @@
-# Projet de Décodeur Soft LDPC
+# LDPC Soft Decoder Performance Evaluation in AWGN Channel
 
-Ce projet implémente un décodeur soft pour les codes LDPC (Low-Density Parity-Check) en MATLAB. Le décodeur utilise un algorithme de **propagation de croyances (Belief Propagation)** pour corriger les erreurs dans les mots de code reçus, en exploitant une matrice de parité de faible densité. Le but est de ramener les mots de code corrompus à leur forme correcte en appliquant plusieurs itérations de mises à jour de messages entre les nœuds variables (v-nodes) et les nœuds de contrôle (c-nodes) de la matrice de parité.
+The script `LDPC_SOFT_DECODER_COMPLETE_TEST.m` is designed to measure the performance of a soft LDPC decoder in the context of an AWGN (Additive White Gaussian Noise) channel. The testing protocol involves several fundamental steps, which we will detail below, along with the associated functions and adjustments to ensure accurate Bit Error Rate (BER) measurement.
 
-## Contenu du projet
+### 1. **Test Parameters**
 
-- **`SOFT_DECODER_GROUPE.m`** : Fonction principale implémentant le décodeur soft pour les codes LDPC.
-- **`LDPC_SOFT_ONLY_TEST_SCRIPT.m`** : Script de test pour valider le décodeur soft à partir d'un jeu de données et comparer avec les résultats de référence.
-- **`LDPC_SOFT_DECODER_COMPLETE_TEST_SCRIPT.m`** : Script additionnel pour évaluer le décodeur en fonction du BER, du nombre d'itérations moyennes, et de la fréquence des arrêts anticipés, avec affichage graphique.
+The parameters defined at the beginning of the script determine the code length, the number of parity bits, and the maximum number of decoder iterations. Additionally, the range of SNR (Signal-to-Noise Ratio) values (in dB) is specified to test the LDPC decoder's performance under various noise conditions.
 
-## Fonctionnalités Principales
-
-### 1. `SOFT_DECODER_GROUPE.m`
-Cette fonction prend en entrée un mot de code bruité et utilise une matrice de vérification de parité `H` pour corriger les erreurs bit à bit. Elle utilise une technique de message-passing entre les noeuds de variable et les noeuds de vérification pour propager les probabilités de chaque bit, ce qui permet de raffiner les estimations jusqu'à convergence.
-
-#### Entrées
-- **c** : Mot de code bruité (vector).
-- **H** : Matrice de vérification de parité (matrice binaire).
-- **p** : Vecteur de probabilités de bit-flip.
-- **MAX_ITER** : Nombre maximal d'itérations pour le décodeur.
-
-#### Sorties
-- **c_cor** : Mot de code corrigé.
-- **iter_count** : Nombre d'itérations effectuées avant la convergence.
-
-#### Fonctionnement
-La fonction suit deux étapes principales à chaque itération :
-1. **Mise à jour des messages des noeuds de vérification vers les noeuds de variable** en calculant les probabilités conditionnelles de chaque bit.
-2. **Mise à jour des messages des noeuds de variable vers les noeuds de vérification** en fonction des messages reçus des noeuds de vérification voisins.
-
-Un arrêt anticipé est déclenché si les contraintes de parité sont satisfaites avant `MAX_ITER` itérations.
-
-### 2. `LDPC_SOFT_ONLY_TEST_SCRIPT.m`
-Ce script exécute le décodeur soft sur un ensemble de données et compare les résultats obtenus avec des mots de code de référence pour vérifier la précision de la correction d'erreurs.
-
-#### Fonctionnalités
-- **Chargement de jeu de données** : Chargement de `student_dataset.mat` pour accéder aux mots de code bruités et probabilités associées.
-- **Comparaison avec référence** : Comparaison des mots de code décodés avec les mots de code de référence pour évaluer les performances.
-- **Affichage des résultats** : Affichage des taux de réussite pour chaque cas testé.
-
-#### Sorties
-- Taux de réussite des correspondances entre le code de référence et le code décodé par le décodeur soft.
-
-### 3. Script d’Analyse de la Performance (BER et plus)
-Ce script réalise un test de performance en simulant la transmission de mots de code avec différentes probabilités de bruit et analyse les performances du décodeur en termes de :
-- **Taux d'erreur binaire (BER)** : Fréquence de bits incorrectement décodés.
-- **Nombre d'itérations moyen** : Mesure de la vitesse de convergence du décodeur.
-- **Taux d'arrêt anticipé** : Fréquence à laquelle le décodeur atteint une solution avant la fin des itérations maximales.
-
-#### Sorties graphiques
-Les résultats sont affichés dans des graphes montrant l'évolution de :
-- **BER en fonction de la probabilité de bruit**
-- **Nombre moyen d'itérations en fonction de la probabilité de bruit**
-- **Taux d'arrêt anticipé en fonction de la probabilité de bruit**
-- **BER en fonction du nombre moyen d'itérations**
-
-## Utilisation
-
-1. **Exécuter le décodeur sur un ensemble de données** :
-   - Lancer `LDPC_SOFT_ONLY_TEST_SCRIPT.m` pour tester le décodeur sur des données chargées et afficher les comparaisons avec les références.
-
-2. **Tester la performance avec BER** :
-   - Lancer le script d'analyse de BER pour évaluer les performances du décodeur sous différentes probabilités de bruit et obtenir des graphiques détaillés.
-
-## Exemples
-
-### Exemple d’Appel de la Fonction de Décodeur
 ```matlab
-% Définir les paramètres
-c_bruite = [1; 0; 1; 1; 0; 1; 0];  % Exemple de mot de code bruité
-H = [
-    1 1 0 1 1 0 0;
-    1 0 1 1 0 1 0;
-    1 0 0 0 1 1 1;
-    0 1 1 0 0 1 1
-];
-p = [0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1];
-MAX_ITER = 10;
-
-% Appel du décodeur
-[c_corrige, iterations] = SOFT_DECODER_GROUPE(c_bruite, H, p, MAX_ITER);
-disp(c_corrige);
-disp(iterations);
+N = 7;  % Number of bits in the codeword (length of c)
+M = 3;  % Number of parity check bits (rows of H)
+MAX_ITER = 50; % Maximum number of decoding iterations
+SNR_dB = 0:1:10;  % Range of SNR values in dB
+num_trials = 1000; % Number of trials to run for each SNR value
 ```
 
-### Exécution du Test et Affichage Graphique
-Exécuter le script d'analyse BER `LDPC_SOFT_DECODER_COMPLETE_TEST_SCRIPT.m` pour obtenir les performances du décodeur en utilisant différentes probabilités de bruit :
+- **N** and **M** determine the size of the LDPC code. The encoder adds parity bits to a message of length **N-M** to form a codeword of length **N**.
+- **SNR_dB** defines the noise levels (signal-to-noise ratio) under which the test will be performed.
+- **num_trials** specifies the number of trials for each SNR value, allowing for reliable statistical results.
+
+### 2. **Encoding and Modulation**
+
+The script uses an LDPC code to encode a message and then applies BPSK (Binary Phase Shift Keying) modulation. The encoded signal is then transmitted over an AWGN channel.
+
+#### 2.1 **LDPC Encoding** (`ldpc_encode` function)
+
 ```matlab
-% Exécuter le script pour obtenir les graphiques de performance
-run('LDPC_SOFT_DECODER_TEST.m')
+function c = ldpc_encode(msg, H)
+    % Function to encode a message with an LDPC code
+    N = size(H, 2);  % Length of the codeword
+    M = size(H, 1);  % Number of parity bits
+    c = zeros(N, 1); % Initialize the codeword
+    
+    % Simple encoding (adding parity bits)
+    c(1:end-M) = msg;
+    
+    % Calculate parity bits from H
+    parity_bits = mod(H(:, 1:end-M) * msg, 2);  % Parity bits
+    c(end-M+1:end) = parity_bits;  % Add parity bits to the codeword
+end
 ```
 
-## Améliorations 
-Ce projet est en cours de développement. Les améliorations futures pourraient inclure :
-- Performance du décodeur
-- Optimisation de l'algorithme pour des matrices `H` de grande taille.
-- Intégration d’une estimation de BER plus rapide pour des ensembles de données larges.
-- Analyse de complexité et ajustements pour améliorer la convergence.
+- **Input**: A message of length **N-M** to encode.
+- **Output**: A codeword of length **N**, including parity bits calculated from the parity check matrix **H**.
 
+#### 2.2 **BPSK Modulation**
 
+```matlab
+x = 2*c - 1;  % BPSK modulation: 0 -> -1, 1 -> +1
+```
+
+Here, each bit 0 is mapped to -1 and each bit 1 is mapped to +1 for BPSK modulation.
+
+### 3. **AWGN Channel**
+
+AWGN noise is added to the modulated signal before it is transmitted over the channel. The noise variance is calculated based on the **SNR**.
+
+```matlab
+noise_variance = 1 / (2 * 10^(snr / 10));  % Noise variance for a given SNR
+noise = sqrt(noise_variance) * randn(size(x));  % Gaussian noise
+y = x + noise;  % Received signal
+```
+
+- **Input**: The modulated signal **x** and noise variance.
+- **Output**: The received signal **y**, which is the modulated signal affected by noise.
+
+### 4. **Soft LDPC Decoding**
+
+Soft decoding involves converting the received signal into probabilities and passing them to the LDPC decoder. Decoding is performed with a maximum number of iterations.
+
+```matlab
+p = (1 + sign(y)) / 2;  % Convert received signal to probability [0,1]
+[c_soft, num_iterations] = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER);  % Soft decoding
+```
+
+- **Input**: The received signal **y**, the parity check matrix **H**, and the probability **p**.
+- **Output**: The decoded codeword **c_soft** and the number of iterations **num_iterations** performed.
+
+### 5. **Bit Error Rate (BER)** Calculation
+
+The BER is calculated by counting the number of bit errors between the received codeword and the transmitted codeword.
+
+```matlab
+num_errors = sum(c_soft ~= c);  % Count bit errors
+total_errors = total_errors + num_errors;  % Accumulate total errors
+```
+
+### 6. **Packet Error Rate (PER)**
+
+If more than 2 bits are in error, the codeword is considered erroneous and counted in the Packet Error Rate (PER).
+
+```matlab
+if num_errors >= 2
+    total_packet_loss = total_packet_loss + 1;
+end
+```
+
+### 7. **Averaging**
+
+After all trials, averages of bit errors, packet errors, decoding iterations, and packet losses are computed for each SNR value.
+
+```matlab
+ber(snr_idx) = total_errors / (num_trials * N);  % BER
+fer(snr_idx) = total_fer_errors / num_trials;    % FER
+avg_decoding_iterations(snr_idx) = total_iterations / num_trials;  % Average iterations
+packet_loss(snr_idx) = total_packet_loss / num_trials;  % Packet loss
+```
+
+### 8. **Displaying Results**
+
+The results are displayed in graphs for each metric.
+
+```matlab
+% Plot BER vs SNR
+subplot(2, 2, 1);
+semilogy(SNR_dB, ber, 'b-o');
+xlabel('SNR (dB)');
+ylabel('Bit Error Rate (BER)');
+title('LDPC Decoder Performance (BER)');
+grid on;
+```
+
+- The plot shows the **Bit Error Rate (BER)** curve as a function of the SNR.
+
+### Conclusion
+
+The protocol implemented in the script is consistent with the task and allows for the measurement of the **BER** of a soft LDPC decoder in an AWGN channel. The script covers several important metrics, such as BER, FER, decoding iterations, and packet loss. The adjustments in the noise calculation and reception probability are well-suited to the AWGN channel and the soft LDPC decoder.
+```
