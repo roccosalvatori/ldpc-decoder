@@ -1,6 +1,6 @@
 %% LDPC_SOFT_ONLY_TEST_SCRIPT.m
 % =========================================================================
-% *Author:* Rocco SALVATORI, *Date:* 2024, November 8 
+% *Author:* Lélio CHETOT, *Date:* 2023, October 31 🎃
 % =========================================================================
 % This script provides an automated process to test the student's soft decoder
 % from a dataset.
