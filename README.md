@@ -1,6 +1,6 @@
 # LDPC Soft Decoder Performance Evaluation in AWGN Channel
 
-The script `LDPC_SOFT_DECODER_COMPLETE_TEST.m` is designed to measure the performance of a soft LDPC decoder in the context of an AWGN (Additive White Gaussian Noise) channel. The testing protocol involves several fundamental steps, which we will detail below, along with the associated functions and adjustments to ensure accurate Bit Error Rate (BER) measurement.
+The script `LDPC_SOFT_DECODER_COMPLETE_TEST.m` is designed to measure the performance of our soft LDPC decoder in the context of an AWGN (Additive White Gaussian Noise) channel. The testing protocol involves several fundamental steps, which we will detail below, along with the associated functions and adjustments to ensure accurate Bit Error Rate (BER) measurement.
 
 ### 1. **Test Parameters**
 
