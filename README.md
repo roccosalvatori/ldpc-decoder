@@ -1,4 +1,115 @@
-# LDPC Soft Decoder Performance Evaluation in AWGN Channel
+
+# PART II - Soft Decoder for LDPC Codes
+
+## Overview
+
+The soft decoder is an essential part of decoding Low-Density Parity-Check (LDPC) codes, especially when applied to noisy communication channels such as Additive White Gaussian Noise (AWGN) channels. This document provides an explanation of the soft decoding process and the function `SOFT_DECODER_GROUPE`, which iteratively decodes the received message using probabilistic information and log-likelihood ratios (LLRs).
+
+The soft decoder operates by processing received bits, which include probabilistic information in the form of LLRs. The decoder uses iterative decoding to gradually refine the estimates of the transmitted message based on these LLRs, ultimately attempting to match the parity-check conditions of the code.
+
+## Process
+
+### 1. **Input Parameters**
+The `SOFT_DECODER_GROUPE` function takes the following inputs:
+
+- **`c`**: The received codeword, typically a vector of bits received after passing through a noisy channel.
+- **`H`**: The parity-check matrix, which defines the LDPC code.
+- **`p`**: The channel probabilities, representing the likelihood of receiving each bit as a 0 or 1.
+- **`MAX_ITER`**: The maximum number of iterations to perform in the decoding process.
+
+### 2. **Log-Likelihood Ratio (LLR) Calculation**
+
+In the soft decoding process, the channel probabilities are first converted into log-likelihood ratios (LLRs), which are used to represent the probability of a bit being a 0 or 1. The LLRs are computed as follows:
+
+```matlab
+Lc = log((1 - p) ./ p);
+```
+
+Where `p` is the probability of receiving a 1 and `Lc` is the log-likelihood ratio that quantifies the certainty of the bit being 1 (positive value) or 0 (negative value).
+
+### 3. **Initialization**
+
+The algorithm initializes the messages passed between variable nodes (v-nodes) and check nodes (c-nodes). The messages are stored in two matrices:
+
+- **`q`**: Messages from v-nodes to c-nodes.
+- **`r`**: Messages from c-nodes to v-nodes.
+- **`Eji_matrix`**: Extrinsic information matrix, used to keep track of the new information at each node.
+
+The initial messages are set to zero, except for the `q` matrix, which is initialized with the channel LLRs.
+
+### 4. **Error Checking**
+
+Before beginning the iterative decoding, the function performs an initial check to see if the received codeword already satisfies the parity-check condition. If the check passes (i.e., no errors are detected), the function returns the received codeword as the correct one.
+
+### 5. **Iterative Decoding Process**
+
+The main decoding loop iterates up to `MAX_ITER` times, updating the messages between v-nodes and c-nodes in each iteration. The process consists of three main steps:
+
+#### a) **Update Messages from c-nodes to v-nodes (`r`)**
+
+For each c-node, the messages to the connected v-nodes are updated by calculating the product of `tanh` values for all other connected v-nodes, excluding the current v-node. This product is then used to update the message in the log-domain:
+
+```matlab
+r(j, i) = 2 * atanh(tanh_prod);
+```
+
+#### b) **Update Messages from v-nodes to c-nodes (`q`)**
+
+Next, the messages from v-nodes to c-nodes are updated by summing the contributions of all the c-nodes connected to each v-node. The sum of the messages from c-nodes is added to the original channel LLR for each bit:
+
+```matlab
+q(i, j) = Lc(i) + sum_r;
+```
+
+#### c) **Bit Decision**
+
+After updating the messages, the final bit estimates are computed based on the updated messages. If the sum of the LLR for a bit (combining the channel LLR and the messages from connected c-nodes) is negative, the decoded bit is set to 1; otherwise, it is set to 0:
+
+```matlab
+c_cor(i) = llr_sum < 0;
+```
+
+#### d) **Check for Convergence**
+
+After each iteration, the decoder checks if the current codeword satisfies the parity-check condition:
+
+```matlab
+if mod(H * c_cor, 2) == 0
+    success = 1;
+    break;
+```
+
+If the codeword satisfies the parity-check (i.e., there are no errors), the decoding is considered successful and the loop breaks early.
+
+### 6. **Failure Handling**
+
+If the decoder does not converge within the specified number of iterations (`MAX_ITER`), it flags the decoding as unsuccessful:
+
+```matlab
+if success == 0
+    disp('Decoding failed to converge within the maximum number of iterations.');
+end
+```
+
+### 7. **Error Checking Function**
+
+The `check_errors` function is used to check if there are errors in the received frame. It calculates the syndrome using the parity-check matrix `H` and verifies if any non-zero syndrome elements are present:
+
+```matlab
+syndrome = mod(H * current_frame(:), 2);
+```
+
+If there are any errors (i.e., the syndrome is non-zero), the function returns `true`.
+
+## Conclusion
+
+The `SOFT_DECODER_GROUPE` function performs soft decoding of an LDPC code by iteratively refining the estimates of the transmitted message. It uses log-likelihood ratios to represent the probabilistic information of each received bit, and updates the messages exchanged between variable and check nodes. The iterative process continues until the decoder successfully converges or the maximum number of iterations is reached.
+
+This soft decoding method is crucial for achieving high performance in noisy communication environments, where the probability of errors is significant. By refining the bit estimates in each iteration, the decoder can correct errors and provide a reliable estimate of the original transmitted message.
+
+
+
+# PART III - LDPC Soft Decoder Performance Evaluation in AWGN Channel
 
 The script `LDPC_SOFT_DECODER_COMPLETE_TEST.m` is designed to measure the performance of our soft LDPC decoder in the context of an AWGN (Additive White Gaussian Noise) channel. The testing protocol involves several fundamental steps, which we will detail below, along with the associated functions and adjustments to ensure accurate Bit Error Rate (BER) measurement.
 
