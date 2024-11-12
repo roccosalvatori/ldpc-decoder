@@ -1,74 +1,95 @@
 function [c_cor, iter_count] = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER)
-    [M, N] = size(H);
+    [M, N] = size(H);  % Get the dimensions of the parity-check matrix
 
-    % Initialisation des messages
-    q = zeros(N, M, 2); % Messages de chaque v-node vers chaque c-node
-    r = zeros(M, N, 2); % Messages de chaque c-node vers chaque v-node
-    
-    % Initialisation des probabilités de chaque bit
+    % Convert channel probabilities to log-likelihood ratios (LLRs)
+    Lc = log((1 - p) ./ p);  % Channel LLR calculation for each bit
+
+    % Initialize messages in log-domain
+    q = zeros(N, M);  % Messages from v-nodes to c-nodes
+    r = zeros(M, N);  % Messages from c-nodes to v-nodes
+    Eji_matrix = zeros(M, N);  % Extrinsic information matrix
+    success = 0;  % Success flag for decoding
+    iter_count = 0;  % Iteration counter
+
+    % Initialize q with the channel LLRs for each v-node
     for i = 1:N
-        q(i, :, 1) = 1 - p(i); % Probabilité que le bit soit 0
-        q(i, :, 2) = p(i);     % Probabilité que le bit soit 1
+        q(i, :) = Lc(i);  % Broadcast the channel LLR to all check nodes
     end
 
-    iter_count = 0; % Initialisation du compteur 
+    % Initial check for errors
+    if check_errors(H, c) == 0
+        disp('No errors detected in the received frame.');
+        c_cor = c;
+        return;
+    end
 
-    % Boucle d'itération pour le décodage
+    % Iterative decoding loop
     for iter = 1:MAX_ITER
-        iter_count = iter; % Stockage du décompte
-        
-        % Étape 1 : Calcul des messages r(j, i, :) pour chaque check node vers les v-nodes
+        iter_count = iter;  % Store the iteration count
+
+        % Step 1: Update r(j, i) messages (from c-nodes to v-nodes)
         for j = 1:M
-            v_nodes = find(H(j, :)); % V-nodes connectés au c-node j
+            v_nodes = find(H(j, :));  % V-nodes connected to c-node j
             for i = v_nodes
-                % Calcul des messages r(j, i, :) en tenant compte des autres q
-                prod_term = 1;
+                % Calculate the product of tanh for all v-nodes connected to c-node j except i
+                tanh_prod = 1;
                 for i_prime = v_nodes
                     if i_prime ~= i
-                        prod_term = prod_term * (1 - 2 * q(i_prime, j, 2));
+                        tanh_prod = tanh_prod * tanh(0.5 * q(i_prime, j));
                     end
                 end
-                % Mise à jour des messages de croyance
-                r(j, i, 1) = 0.5 * (1 + prod_term); % Probabilité de 0
-                r(j, i, 2) = 1 - r(j, i, 1);        % Probabilité de 1
+                % Update r message in log-domain using tanh product
+                r(j, i) = 2 * atanh(tanh_prod);
+                % Clip to avoid overflow in the tanh/atanh computation
+                r(j, i) = max(min(r(j, i), 10), -10);  % Clipping to range [-10, 10]
             end
         end
 
-        % Étape 2 : Calcul des messages q(i, j, :) pour chaque v-node vers les c-nodes
+        % Step 2: Update q(i, j) messages (from v-nodes to c-nodes)
         for i = 1:N
-            c_nodes = find(H(:, i)); % C-nodes connectés au v-node i
+            c_nodes = find(H(:, i));  % C-nodes connected to v-node i
             for j = c_nodes'
-                % Calcul des messages q(i, j, :) en fonction des r
-                prod_r0 = prod(r(c_nodes(c_nodes ~= j), i, 1));
-                prod_r1 = prod(r(c_nodes(c_nodes ~= j), i, 2));
-                
-                q(i, j, 1) = (1 - p(i)) * prod_r0; % Probabilité de 0
-                q(i, j, 2) = p(i) * prod_r1;       % Probabilité de 1
-
-                % Normalisation pour éviter les sous-flux
-                norm_factor = q(i, j, 1) + q(i, j, 2);
-                q(i, j, :) = q(i, j, :) / norm_factor;
+                % Sum LLR contributions for q(i, j)
+                sum_r = sum(r(c_nodes(c_nodes ~= j), i));
+                q(i, j) = Lc(i) + sum_r;  % Combine channel LLR with other check node contributions
             end
         end
 
-        % Mise à jour des estimations finales pour chaque bit
+        % Step 3: Compute final bit estimates based on updated messages
         c_cor = zeros(N, 1);
         for i = 1:N
             c_nodes = find(H(:, i));
-            prod_r0 = prod(r(c_nodes, i, 1));
-            prod_r1 = prod(r(c_nodes, i, 2));
+            llr_sum = Lc(i) + sum(r(c_nodes, i));  % Total LLR for bit i
 
-            % Décision basée sur la probabilité la plus forte
-            if p(i) * prod_r1 > (1 - p(i)) * prod_r0
-                c_cor(i) = 1;
-            else
-                c_cor(i) = 0;
-            end
+            % Decision based on sign of LLR
+            c_cor(i) = llr_sum < 0;  % If LLR < 0, estimate 1, else 0
         end
 
-        % Vérification des contraintes de parité pour arrêt anticipé
-        if all(mod(H * c_cor, 2) == 0)
+        % Debugging information (optional)
+        disp(['Iteration: ', num2str(iter)]);
+        disp('c_cor:');
+        disp(c_cor');
+        disp(['Parity check: ', num2str(mod(H * c_cor, 2)')]);
+
+        % Check for convergence using parity check
+        if mod(H * c_cor, 2) == 0
+            success = 1;  % Decoding successful
+            disp(['Converged at iteration: ', num2str(iter)]);
             break;
         end
     end
+
+    % If decoding is unsuccessful after MAX_ITER, flag failure
+    if success == 0
+        disp('Decoding failed to converge within the maximum number of iterations.');
+    end
+end
+
+% Function to check if there are errors in the received frame
+function res = check_errors(H, current_frame)
+    % Syndrome = H * current_frame (mod 2)
+    syndrome = mod(H * current_frame(:), 2);  % Ensure current_frame is a column vector
+    areErrors = any(syndrome);  % If there's any non-zero element, it's an error
+    
+    res = areErrors;
 end
