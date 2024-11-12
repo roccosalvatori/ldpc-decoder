@@ -18,7 +18,6 @@ function [c_cor, iter_count] = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER)
 
     % Initial check for errors
     if check_errors(H, c) == 0
-        disp('No errors detected in the received frame.');
         c_cor = c;
         return;
     end
@@ -65,16 +64,11 @@ function [c_cor, iter_count] = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER)
             c_cor(i) = llr_sum < 0;  % If LLR < 0, estimate 1, else 0
         end
 
-        % Debugging information (optional)
-        disp(['Iteration: ', num2str(iter)]);
-        disp('c_cor:');
-        disp(c_cor');
-        disp(['Parity check: ', num2str(mod(H * c_cor, 2)')]);
+
 
         % Check for convergence using parity check
         if mod(H * c_cor, 2) == 0
             success = 1;  % Decoding successful
-            disp(['Converged at iteration: ', num2str(iter)]);
             break;
         end
     end
