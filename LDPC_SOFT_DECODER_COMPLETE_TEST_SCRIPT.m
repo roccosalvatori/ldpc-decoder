@@ -1,100 +1,77 @@
-% Test script for SOFT_DECODER_GROUPE with graphical analysis
+% LDPC BER Test Script with Multiple Trials
 
-% Parameters
-N = 7; % Number of bits (length of codeword)
-M = 4; % Number of parity-check equations
-MAX_ITER = 50; % Max number of iterations for decoding
-p_values = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2]; % Probabilities of bit error (noise levels)
-num_trials = 100; % Number of trials to run for BER analysis
+% Set parameters
+N = 7;  % Number of codeword bits (length of c)
+M = 3;  % Number of check bits (rows of H)
+MAX_ITER = 50; % Maximum number of decoding iterations
+SNR_dB = 0:1:10;  % Range of SNR values in dB
+num_trials = 1000; % Number of trials to run per SNR
 
-% Define a simple parity-check matrix H for a (7,4) Hamming code
-H = [
-    1 1 0 1 1 0 0;
-    1 0 1 1 0 1 0;
-    1 0 0 0 1 1 1;
-    0 1 1 0 0 1 1
-];
+% Example LDPC H matrix (parity-check matrix)
+H = [1 0 1 0 1 0 1;
+     0 1 1 1 0 1 1;
+     1 1 0 1 1 1 0];
 
-% Store results
-BERs = zeros(length(p_values), 1);
-avg_iterations = zeros(length(p_values), 1);
-early_stops = zeros(length(p_values), 1);
+% Initialize BER array
+ber = zeros(length(SNR_dB), 1);
 
-for idx = 1:length(p_values)
-    p = p_values(idx); % Current noise probability
-
-    num_errors = 0; % Number of errors encountered
-    total_iterations = 0; % Total iterations for analysis
-    total_early_stops = 0; % Total early stops
-
+% Run the test for each SNR
+for snr_idx = 1:length(SNR_dB)
+    snr = SNR_dB(snr_idx);  % Current SNR in dB
+    disp(['Testing SNR = ', num2str(snr), ' dB']);
+    
+    % Initialize error count for the current SNR
+    total_errors = 0;
+    
+    % Run multiple trials for this SNR
     for trial = 1:num_trials
-        % Step 1: Generate random codeword with parity check
-        c = mod(randi([0, 1], N, 1), 2); % Random binary codeword
-        while any(mod(H * c, 2) ~= 0) % Ensure it satisfies H * c = 0
-            c = mod(randi([0, 1], N, 1), 2);
-        end
-
-        % Step 2: Simulate transmission with bit-flipping errors using `p`
-        noisy_c = c;
-        for i = 1:N
-            if rand() < p % With probability p, flip the bit
-                noisy_c(i) = 1 - noisy_c(i); % Flip bit (0 -> 1 or 1 -> 0)
-            end
-        end
-
-        % Step 3: Run the soft decoder on the noisy codeword
-        p_vector = p * ones(N, 1); % Probability vector for the decoder
-        [c_decoded, iterations] = SOFT_DECODER_GROUPE(noisy_c, H, p_vector, MAX_ITER);
-
-        % Step 4: Count the number of bit errors (Bit Error Rate)
-        num_errors = num_errors + sum(c_decoded ~= c);
-
-        % Track total iterations and early stop count
-        total_iterations = total_iterations + iterations;
-        if iterations < MAX_ITER
-            total_early_stops = total_early_stops + 1;
-        end
+        % Generate a random message to encode
+        msg = randi([0, 1], N - M, 1); % Random message of size N-M
+        
+        % Encode the message
+        c = ldpc_encode(msg, H);
+        
+        % Modulate the codeword (BPSK modulation)
+        x = 2*c - 1;  % BPSK modulation (0 -> -1, 1 -> +1)
+        
+        % Add AWGN noise to the transmitted signal
+        noise_variance = 1 / (2 * 10^(snr / 10)); % Noise variance for given SNR
+        noise = sqrt(noise_variance) * randn(size(x)); % AWGN noise
+        y = x + noise;  % Received signal
+        
+        % Decode the received signal using the soft decoder
+        p = (1 + sign(y)) / 2;  % Convert received signal to probability [0,1]
+        c_soft = SOFT_DECODER_GROUPE(c, H, p, MAX_ITER);  % Decode the received signal
+        
+        % Compute the number of bit errors for this trial
+        num_errors = sum(c_soft ~= c);  % Count bit errors
+        total_errors = total_errors + num_errors;  % Accumulate error count
     end
-
-    % Calculate and store Bit Error Rate (BER)
-    BERs(idx) = num_errors / (num_trials * N);
-
-    % Calculate and store average iterations per trial
-    avg_iterations(idx) = total_iterations / num_trials;
-
-    % Store the early stop rate
-    early_stops(idx) = total_early_stops / num_trials;
+    
+    % Average the errors across all trials for this SNR
+    ber(snr_idx) = total_errors / (num_trials * N);  % BER = number of errors / total bits
 end
 
-% Plot Bit Error Rate (BER) vs. Noise Probability p(i)
+% Plot the BER vs SNR
 figure;
-subplot(2, 2, 1);
-plot(p_values, BERs, '-o', 'LineWidth', 2);
-xlabel('Noise Probability p(i)', 'FontSize', 12);
-ylabel('Bit Error Rate (BER)', 'FontSize', 12);
-title('BER vs. Noise Probability', 'FontSize', 14);
+semilogy(SNR_dB, ber, 'b-o');
+xlabel('SNR (dB)');
+ylabel('Bit Error Rate (BER)');
+title('LDPC Decoder BER Performance');
 grid on;
 
-% Plot Average Iterations vs. Noise Probability p(i)
-subplot(2, 2, 2);
-plot(p_values, avg_iterations, '-o', 'LineWidth', 2);
-xlabel('Noise Probability p(i)', 'FontSize', 12);
-ylabel('Average Iterations', 'FontSize', 12);
-title('Average Iterations vs. Noise Probability', 'FontSize', 14);
-grid on;
-
-% Plot Early Stop Rate vs. Noise Probability p(i)
-subplot(2, 2, 3);
-plot(p_values, early_stops, '-o', 'LineWidth', 2);
-xlabel('Noise Probability p(i)', 'FontSize', 12);
-ylabel('Early Stop Rate', 'FontSize', 12);
-title('Early Stop Rate vs. Noise Probability', 'FontSize', 14);
-grid on;
-
-% Plot BER vs. Average Iterations
-subplot(2, 2, 4);
-plot(avg_iterations, BERs, '-o', 'LineWidth', 2);
-xlabel('Average Iterations', 'FontSize', 12);
-ylabel('Bit Error Rate (BER)', 'FontSize', 12);
-title('BER vs. Average Iterations', 'FontSize', 14);
-grid on;
+%% LDPC Encoder Function
+function c = ldpc_encode(msg, H)
+    % Function to encode a message using LDPC code (H is the parity-check matrix)
+    N = size(H, 2);  % Length of the codeword
+    M = size(H, 1);  % Number of check bits
+    c = zeros(N, 1); % Initialize codeword
+    
+    % Encoding process (simple for example, actual encoding may vary)
+    % For simplicity, here we just append the message to form a codeword
+    c(1:end-M) = msg;
+    
+    % Compute the parity check bits based on H
+    parity_bits = mod(H(:, 1:end-M) * msg, 2);  % Parity bits
+    c(end-M+1:end) = parity_bits;  % Append parity bits to the codeword
+end
