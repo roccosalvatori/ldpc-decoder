@@ -7,7 +7,7 @@ MAX_ITER = 50; % Maximum number of decoding iterations
 SNR_dB = 0:1:10;  % Range of SNR values in dB
 num_trials = 1000; % Number of trials to run per SNR
 
-% Example LDPC H matrix (parity-check matrix)
+% LDPC H matrix (parity-check matrix)
 H = [1 0 1 0 1 0 1;
      0 1 1 1 0 1 1;
      1 1 0 1 1 1 0];
@@ -114,7 +114,6 @@ function c = ldpc_encode(msg, H)
     M = size(H, 1);  % Number of check bits
     c = zeros(N, 1); % Initialize codeword
     
-    % Encoding process (simple for example, actual encoding may vary)
     % For simplicity, here we just append the message to form a codeword
     c(1:end-M) = msg;
     
